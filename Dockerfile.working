@@ -1,0 +1,36 @@
+# Use an official Ubuntu base image
+FROM ubuntu:latest
+
+# Install OpenSSH server and sudo
+RUN apt-get update && apt-get install -y openssh-server sudo && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create SSH directory and set up keys (optional)
+RUN mkdir /var/run/sshd
+
+# Create a user and set password
+RUN useradd -m ub1server && echo 'ub1server:password' | chpasswd
+
+# Add the user to the sudo group to grant admin permissions
+RUN usermod -aG sudo ub1server
+
+# Allow root login (if needed, but not recommended)
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# Enable password authentication
+RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# Set the default shell for the new user
+RUN chsh -s /bin/bash ub1server
+
+# Change ownership and permissions for all files (if necessary)
+# Note: Adjust the path as necessary; using "/" will set permissions for all files.
+# This can be risky, so use with caution!
+RUN chown -R ub1server:ub1server /home/ub1server && \
+    chmod -R 777 /home/ub1server
+
+# Expose SSH port
+EXPOSE 22
+
+# Start OpenSSH server
+CMD ["/usr/sbin/sshd", "-D"]
